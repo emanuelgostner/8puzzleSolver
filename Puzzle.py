@@ -61,7 +61,8 @@ class Puzzle:
         """ Initialize the puzzle size by the specified size,open and closed lists to empty """
         self.puzzleSize = puzzleSize
         self.iterations = iterations
-        if heuristic == "manhahttan":
+        self.useHeuristic = heuristic
+        if heuristic == "manhattan":
             self.heuristic = self.h_manhattan
         elif heuristic == 'hemmington':
             self.heuristic = self.h_hemmington
@@ -73,9 +74,10 @@ class Puzzle:
         self.startPuzzle = self.randomStartPuzzle()
         #self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
         self.goalPuzzle = self.goalPuzzle()
+        self.searchCost = 0
 
     def printPuzzle(self, node):
-        print(f'---level: {node.level} fval: {node.fval}---')
+        print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval}---')
         for i in range(self.puzzleSize):
             for j in range(self.puzzleSize):
                 print(node.puzzle[i][j], end=' ')
@@ -123,6 +125,8 @@ class Puzzle:
 
         return distance
 
+    def estimate_effective_branching_factor(self, searchCost, depth):
+        return searchCost**(1/depth)
 
     def main(self):
         startNode = Node(self.startPuzzle, 0, 0)
@@ -130,14 +134,15 @@ class Puzzle:
         startNode.fval = self.f(startNode, goal)
         """ Put the start node in the open list"""
         self.open.append(startNode)
-        act = 0
         while True:
             currNode = self.open[0]
-            print(f"---Iteration:{act}")
             self.printPuzzle(currNode)
 
             """ End condition. If heuristics equal 0 the goal is reached"""
             if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
+                print(f'Algorithm A* with heuristic {self.useHeuristic}')
+                print(f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
+                print("result:")
                 self.printPuzzle(currNode)
                 break
             childs = currNode.generate_child()
@@ -158,9 +163,9 @@ class Puzzle:
 
             """ sort the open list based on f value """
             self.open.sort(key=lambda x: x.fval, reverse=False)
-            act= act+1
+            self.searchCost = self.searchCost+1
 
 
 
-puz = Puzzle(3, 1, 'hemmington')
+puz = Puzzle(3, 1, 'manhattan')
 puz.main()
