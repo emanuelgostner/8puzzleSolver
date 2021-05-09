@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from itertools import islice
 
 
@@ -108,8 +109,20 @@ class Puzzle:
                     temp += 1
         return temp
 
-    def h_manhattan(self):
-        return
+    def h_manhattan(self, start, goal):
+        distance = 0
+        # iterate through all numbers in start puzzle
+        for y, row in enumerate(start):
+            for x, curr_num in enumerate(row):
+                # find current num in goal puzzle
+                for y2, row in enumerate(goal):
+                    for x2, goal_num in enumerate(row):
+                        if goal_num == curr_num:
+                            # calculate distance
+                            distance += (abs(x2 - x) + abs(y2 - y))
+
+        return distance
+
 
     def main(self):
         startNode = Node(self.startPuzzle, 0, 0)
