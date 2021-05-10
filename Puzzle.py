@@ -1,6 +1,7 @@
 import random
 import numpy as np
 from itertools import islice
+import pandas as pd
 
 
 class Node:
@@ -57,11 +58,12 @@ class Node:
 
 
 class Puzzle:
-    def __init__(self, puzzleSize, iterations, heuristic):
+    def __init__(self, puzzleSize, max_depth, heuristic, df):
         """ Initialize the puzzle size by the specified size,open and closed lists to empty """
         self.puzzleSize = puzzleSize
-        self.iterations = iterations
+        self.max_depth = max_depth
         self.useHeuristic = heuristic
+        self.df = df
         if heuristic == "manhattan":
             self.heuristic = self.h_manhattan
         elif heuristic == 'hemmington':
@@ -70,9 +72,9 @@ class Puzzle:
             self.heuristic = self.h_hemmington
         self.open = []
         self.closed = []
-        #self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
+        # self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
         self.startPuzzle = self.randomStartPuzzle()
-        #self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
+        # self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
         self.goalPuzzle = self.goalPuzzle()
         self.searchCost = 0
 
@@ -82,6 +84,16 @@ class Puzzle:
             for j in range(self.puzzleSize):
                 print(node.puzzle[i][j], end=' ')
             print('')
+        # save to dataframe
+        if self.searchCost != -1 and not df.empty:
+            new_row = {
+                "depth": node.level,
+                "searchCost": self.searchCost,
+                "fval": node.fval
+            }
+            self.df = self.df.append(new_row, ignore_index=True)
+            return self.df
+        return None
 
     def randomStartPuzzle(self):
         """ Generate Puzzle matrice"""
@@ -122,11 +134,10 @@ class Puzzle:
                         if goal_num == curr_num:
                             # calculate distance
                             distance += (abs(x2 - x) + abs(y2 - y))
-
         return distance
 
     def estimate_effective_branching_factor(self, searchCost, depth):
-        return searchCost**(1/depth)
+        return searchCost ** (1 / depth)
 
     def main(self):
         startNode = Node(self.startPuzzle, 0, 0)
@@ -136,15 +147,26 @@ class Puzzle:
         self.open.append(startNode)
         while True:
             currNode = self.open[0]
-            self.printPuzzle(currNode)
+            # self.printPuzzle(currNode)
 
             """ End condition. If heuristics equal 0 the goal is reached"""
             if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
                 print(f'Algorithm A* with heuristic {self.useHeuristic}')
-                print(f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
+                print(
+                    f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
                 print("result:")
-                self.printPuzzle(currNode)
-                break
+                aa = self.printPuzzle(currNode)
+                if aa is not None:
+                    return aa
+                else:
+                    return self.df
+            elif currNode.level > self.max_depth:
+                self.searchCost = -1
+                aa = self.printPuzzle(currNode)
+                if aa is not None:
+                    return aa
+                else:
+                    return self.df
             childs = currNode.generate_child()
             for i in childs:
                 new = True
@@ -163,9 +185,22 @@ class Puzzle:
 
             """ sort the open list based on f value """
             self.open.sort(key=lambda x: x.fval, reverse=False)
-            self.searchCost = self.searchCost+1
+            self.searchCost = self.searchCost + 1
 
 
 
-puz = Puzzle(3, 1, 'manhattan')
-puz.main()
+df = pd.DataFrame()
+new_row = {
+    "depth": "test",
+    "searchCost": -1,
+    "fval": "test"
+}
+df = df.append(new_row, ignore_index=True)
+
+for i in range(1000):
+    puz = Puzzle(3, 13, 'hemmington', df)
+    df = puz.main()
+    print(df)
+    print(str(i) + "/1000")
+
+df.to_csv("yarak2.csv", index=False)
