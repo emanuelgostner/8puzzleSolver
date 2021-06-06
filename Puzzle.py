@@ -1,3 +1,4 @@
+import math
 import random
 import numpy as np
 from itertools import islice
@@ -76,6 +77,30 @@ class Puzzle:
         self.goalPuzzle = self.goalPuzzle()
         self.searchCost = 0
 
+    def getInvCount(self, arr):
+        inv_count = 0
+        for i in range(len(arr)):
+            for j in range(i + 1, len(arr)):
+                if (arr[i] > arr[j]):
+                    inv_count += 1
+
+        return inv_count
+
+    def checkSolvability(self):
+        puzzle2dArr = np.array(self.startPuzzle)
+        puzzle1dArr = puzzle2dArr.flatten()
+        inversionCount = self.getInvCount(puzzle1dArr)
+        if self.puzzleSize % 2 != 0 and inversionCount % 2 == 0:
+            return True
+        elif self.puzzleSize % 2 == 0:
+            indexOfBlank = [i for i, j in enumerate(self.startPuzzle) if j == 0]
+            rowsFromBottom = math.floor((self.puzzleSize**2 - indexOfBlank) / self.puzzleSize) + 1
+            if inversionCount % 2 != 0 and rowsFromBottom % 2 == 0:
+                return True
+            elif inversionCount % 2 == 0 and rowsFromBottom % 2 != 0:
+                return True
+        return False
+
     def printPuzzle(self, node):
         print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval}---')
         for i in range(self.puzzleSize):
@@ -130,40 +155,43 @@ class Puzzle:
 
     def main(self):
         startNode = Node(self.startPuzzle, 0, 0)
-        goal = self.goalPuzzle
-        startNode.fval = self.f(startNode, goal)
-        """ Put the start node in the open list"""
-        self.open.append(startNode)
-        while True:
-            currNode = self.open[0]
-            self.printPuzzle(currNode)
-
-            """ End condition. If heuristics equal 0 the goal is reached"""
-            if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
-                print(f'Algorithm A* with heuristic {self.useHeuristic}')
-                print(f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
-                print("result:")
+        if self.checkSolvability():
+            goal = self.goalPuzzle
+            startNode.fval = self.f(startNode, goal)
+            """ Put the start node in the open list"""
+            self.open.append(startNode)
+            while True:
+                currNode = self.open[0]
                 self.printPuzzle(currNode)
-                break
-            childs = currNode.generate_child()
-            for i in childs:
-                new = True
-                i.fval = self.f(i, self.goalPuzzle)
-                """ Check if this puzzle already existed"""
-                for x in self.closed + self.open:
-                    if x.puzzle == i.puzzle:
-                        new = False
-                        break
-                if new:
-                    self.open.append(i)
-                else:
-                    new = True
-            self.closed.append(currNode)
-            del self.open[0]
 
-            """ sort the open list based on f value """
-            self.open.sort(key=lambda x: x.fval, reverse=False)
-            self.searchCost = self.searchCost+1
+                """ End condition. If heuristics equal 0 the goal is reached"""
+                if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
+                    print(f'Algorithm A* with heuristic {self.useHeuristic}')
+                    print(f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
+                    print("result:")
+                    self.printPuzzle(currNode)
+                    break
+                childs = currNode.generate_child()
+                for i in childs:
+                    new = True
+                    i.fval = self.f(i, self.goalPuzzle)
+                    """ Check if this puzzle already existed"""
+                    for x in self.closed + self.open:
+                        if x.puzzle == i.puzzle:
+                            new = False
+                            break
+                    if new:
+                        self.open.append(i)
+                    else:
+                        new = True
+                self.closed.append(currNode)
+                del self.open[0]
+
+                """ sort the open list based on f value """
+                self.open.sort(key=lambda x: x.fval, reverse=False)
+                self.searchCost = self.searchCost+1
+        else:
+            print("Puzzle is not solvable")
 
 
 
