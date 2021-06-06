@@ -71,9 +71,9 @@ class Puzzle:
             self.heuristic = self.h_hemmington
         self.open = []
         self.closed = []
-        #self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
+        # self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
         self.startPuzzle = self.randomStartPuzzle()
-        #self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
+        # self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
         self.goalPuzzle = self.goalPuzzle()
         self.searchCost = 0
 
@@ -94,7 +94,7 @@ class Puzzle:
             return True
         elif self.puzzleSize % 2 == 0:
             indexOfBlank = [i for i, j in enumerate(self.startPuzzle) if j == 0]
-            rowsFromBottom = math.floor((self.puzzleSize**2 - indexOfBlank) / self.puzzleSize) + 1
+            rowsFromBottom = math.floor((self.puzzleSize ** 2 - indexOfBlank) / self.puzzleSize) + 1
             if inversionCount % 2 != 0 and rowsFromBottom % 2 == 0:
                 return True
             elif inversionCount % 2 == 0 and rowsFromBottom % 2 != 0:
@@ -151,7 +151,7 @@ class Puzzle:
         return distance
 
     def estimate_effective_branching_factor(self, searchCost, depth):
-        return searchCost**(1/depth)
+        return searchCost ** (1 / depth)
 
     def main(self):
         startNode = Node(self.startPuzzle, 0, 0)
@@ -167,7 +167,8 @@ class Puzzle:
                 """ End condition. If heuristics equal 0 the goal is reached"""
                 if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
                     print(f'Algorithm A* with heuristic {self.useHeuristic}')
-                    print(f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
+                    print(
+                        f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
                     print("result:")
                     self.printPuzzle(currNode)
                     break
@@ -189,11 +190,32 @@ class Puzzle:
 
                 """ sort the open list based on f value """
                 self.open.sort(key=lambda x: x.fval, reverse=False)
-                self.searchCost = self.searchCost+1
+                self.searchCost = self.searchCost + 1
         else:
             print("Puzzle is not solvable")
 
 
+def user_interface():
+    print("Enter puzzleSize (~3 recommended): ")
+    puzzleSize = int(input())
+    print("Enter maximum iterations (~20 recommended): ")
+    iterations = int(input())
+    print("Enter heuristic ('manhattan' or 'hemmington'): ")
+    heuristic = str(input())
 
-puz = Puzzle(3, 1, 'manhattan')
-puz.main()
+    if puzzleSize <= 0:
+        print("Please choose a puzzleSize > 0")
+        return None, None, None
+    if iterations <= 0:
+        print("Please choose iterations > 0")
+        return None, None, None
+    if heuristic != "manhattan" and heuristic != "hemmington":
+        print("Please choose a correct heuristic")
+        return None, None, None
+    return puzzleSize, iterations, heuristic
+
+
+puzzleSize, iterations, heuristic = user_interface()
+if puzzleSize is not None:
+    puz = Puzzle(puzzleSize, iterations, heuristic)
+    puz.main()
