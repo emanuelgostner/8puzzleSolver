@@ -72,34 +72,36 @@ class Puzzle:
         self.open = []
         self.closed = []
         # self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
-        self.startPuzzle = self.randomStartPuzzle()
+        self.startPuzzle = ''
         # self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
         self.goalPuzzle = self.goalPuzzle()
         self.searchCost = 0
 
-    def getInvCount(self, arr):
-        inv_count = 0
-        for i in range(len(arr)):
-            for j in range(i + 1, len(arr)):
-                if (arr[i] > arr[j]):
-                    inv_count += 1
+    # Python3 program to check if a given
+    # instance of 8 puzzle is solvable or not
 
+    # A utility function to count
+    # inversions in given array 'arr[]'
+    def getInvCount2(self, arr):
+
+        inv_count = 0
+        for i in range(0, 2):
+            for j in range(i + 1, 3):
+
+                # Value 0 is used for empty space
+                if (arr[j][i] > 0 and arr[j][i] > arr[i][j]):
+                    inv_count += 1
         return inv_count
 
-    def checkSolvability(self):
-        puzzle2dArr = np.array(self.startPuzzle)
-        puzzle1dArr = puzzle2dArr.flatten()
-        inversionCount = self.getInvCount(puzzle1dArr)
-        if self.puzzleSize % 2 != 0 and inversionCount % 2 == 0:
-            return True
-        elif self.puzzleSize % 2 == 0:
-            indexOfBlank = [i for i, j in enumerate(self.startPuzzle) if j == 0]
-            rowsFromBottom = math.floor((self.puzzleSize ** 2 - indexOfBlank) / self.puzzleSize) + 1
-            if inversionCount % 2 != 0 and rowsFromBottom % 2 == 0:
-                return True
-            elif inversionCount % 2 == 0 and rowsFromBottom % 2 != 0:
-                return True
-        return False
+    # This function returns true
+    # if given 8 puzzle is solvable.
+    def isSolvable(self, puzzle):
+
+        # Count inversions in given 8 puzzle
+        invCount = self.getInvCount2(puzzle)
+
+        # return true if inversion count is even.
+        return (invCount % 2 == 0)
 
     def printPuzzle(self, node):
         print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval}---')
@@ -154,68 +156,67 @@ class Puzzle:
         return searchCost ** (1 / depth)
 
     def main(self):
+        while True:
+            self.startPuzzle = self.randomStartPuzzle()
+            if self.isSolvable(self.startPuzzle):
+                print('puzzle is solvable')
+                break
+            print('puzzle not solvable, calculate new one')
+
         startNode = Node(self.startPuzzle, 0, 0)
-        if self.checkSolvability():
-            goal = self.goalPuzzle
-            startNode.fval = self.f(startNode, goal)
-            """ Put the start node in the open list"""
-            self.open.append(startNode)
-            while True:
-                currNode = self.open[0]
+        goal = self.goalPuzzle
+        startNode.fval = self.f(startNode, goal)
+        """ Put the start node in the open list"""
+        self.open.append(startNode)
+        while True:
+            currNode = self.open[0]
+            self.printPuzzle(currNode)
+
+            """ End condition. If heuristics equal 0 the goal is reached"""
+            if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
+                print(f'Algorithm A* with heuristic {self.useHeuristic}')
+                print(
+                    f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
+                print("result:")
                 self.printPuzzle(currNode)
-
-                """ End condition. If heuristics equal 0 the goal is reached"""
-                if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
-                    print(f'Algorithm A* with heuristic {self.useHeuristic}')
-                    print(
-                        f"effective branching factor: {self.estimate_effective_branching_factor(self.searchCost, currNode.level)}")
-                    print("result:")
-                    self.printPuzzle(currNode)
-                    break
-                childs = currNode.generate_child()
-                for i in childs:
+                break
+            childs = currNode.generate_child()
+            for i in childs:
+                new = True
+                i.fval = self.f(i, self.goalPuzzle)
+                """ Check if this puzzle already existed"""
+                for x in self.closed + self.open:
+                    if x.puzzle == i.puzzle:
+                        new = False
+                        break
+                if new:
+                    self.open.append(i)
+                else:
                     new = True
-                    i.fval = self.f(i, self.goalPuzzle)
-                    """ Check if this puzzle already existed"""
-                    for x in self.closed + self.open:
-                        if x.puzzle == i.puzzle:
-                            new = False
-                            break
-                    if new:
-                        self.open.append(i)
-                    else:
-                        new = True
-                self.closed.append(currNode)
-                del self.open[0]
+            self.closed.append(currNode)
+            del self.open[0]
 
-                """ sort the open list based on f value """
-                self.open.sort(key=lambda x: x.fval, reverse=False)
-                self.searchCost = self.searchCost + 1
-        else:
-            print("Puzzle is not solvable")
-
+            """ sort the open list based on f value """
+            self.open.sort(key=lambda x: x.fval, reverse=False)
+            self.searchCost = self.searchCost + 1
 
 def user_interface():
-    print("Enter puzzleSize (~3 recommended): ")
-    puzzleSize = int(input())
-    print("Enter maximum iterations (~20 recommended): ")
-    iterations = int(input())
-    print("Enter heuristic ('manhattan' or 'hemmington'): ")
-    heuristic = str(input())
-
-    if puzzleSize <= 0:
-        print("Please choose a puzzleSize > 0")
-        return None, None, None
-    if iterations <= 0:
-        print("Please choose iterations > 0")
-        return None, None, None
-    if heuristic != "manhattan" and heuristic != "hemmington":
-        print("Please choose a correct heuristic")
-        return None, None, None
-    return puzzleSize, iterations, heuristic
+    while True:
+        print("Enter heuristic ('manhattan' or 'hemmington'): ")
+        try:
+            heuristic = str(input())
+            if heuristic == "manhattan" or heuristic == "hemmington":
+                break
+            print("The input is not valid 1")
+            continue
+        except ValueError:
+            print("The input is not valid 2")
 
 
-puzzleSize, iterations, heuristic = user_interface()
-if puzzleSize is not None:
-    puz = Puzzle(puzzleSize, iterations, heuristic)
-    puz.main()
+
+    return heuristic
+
+
+heuristic = user_interface()
+puz = Puzzle(3, 1, heuristic)
+puz.main()
