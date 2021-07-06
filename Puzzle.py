@@ -70,6 +70,32 @@ class Node:
 
 
 class Puzzle:
+    """
+        A class used to find a path to solve a 3x3 puzzle.
+        The A* algorithm is used for pathfinding
+        For optimal solution a heuristic value is used (hemmington, manhattan)
+
+        ...
+
+        Attributes
+        ----------
+        puzzleSize : int
+            size of the puzzle
+        maxIterations : int
+            the maximum number of iterations the puzzle solver makes before throwing away the initial puzzle and generate a new one
+        heuristic : string
+            the heuristic algorithm used to calculate the distance to the goal state
+        open: array
+            list of nodes that havent been traversed yet
+        closed: array
+            list of nodes that have already been traversed
+        startPuzzle: array
+            multidimensianal array that represents the start state of the puzzle
+        goalPuzzle: array
+            multidimensianal array that represents the goal state of the puzzle
+        searchCost: int
+            number of iterations done by the A* algorithm. Represents the search cost
+    """
     def __init__(self, puzzleSize, maxIterations, heuristic):
         """ Initialize the puzzle size by the specified size,open and closed lists to empty """
         self.puzzleSize = puzzleSize
@@ -83,17 +109,15 @@ class Puzzle:
             self.heuristic = self.h_hemmington
         self.open = []
         self.closed = []
-        # self.startPuzzle = [[7,2,4],[5,0,6],[8,3,1]]
         self.startPuzzle = ''
-        # self.goalPuzzle=[[1,2,3],[4,5,6],[7,8,0]]
         self.goalPuzzle = self.goalPuzzle()
         self.searchCost = 0
 
-    # Python3 program to check if a given
-    # instance of 8 puzzle is solvable or not
-
-    # A utility function to count
-    # inversions in given array 'arr[]'
+    """
+        Check if a given
+        instance of 8 puzzle is solvable or not
+        by counting the inversions in given puzzle 'arr[]'
+    """
     def getInvCount2(self, arr):
 
         inv_count = 0
@@ -105,10 +129,14 @@ class Puzzle:
                     inv_count += 1
         return inv_count
 
-    # This function returns true
-    # if given 8 puzzle is solvable.
-    def isSolvable(self, puzzle):
 
+
+    def isSolvable(self, puzzle):
+        """
+           Check if a given
+           instance of 8 puzzle is solvable or not
+           by counting the inversions in given puzzle 'arr[]'
+        """
         # Count inversions in given 8 puzzle
         invCount = self.getInvCount2(puzzle)
 
@@ -116,6 +144,14 @@ class Puzzle:
         return (invCount % 2 == 0)
 
     def printPuzzle(self, node):
+        """
+            Gets and prints the given node
+
+            Parameters
+            ----------
+            node : node
+                current node
+        """
         print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval} heuristic val: {self.heuristic(node.puzzle, self.goalPuzzle)}---')
         for i in range(self.puzzleSize):
             for j in range(self.puzzleSize):
@@ -123,24 +159,72 @@ class Puzzle:
             print('')
 
     def randomStartPuzzle(self):
-        """ Generate Puzzle matrice"""
+        """
+             Generate random Puzzle matrice
+
+             Parameters
+             ----------
+             node : node
+                 current node
+
+            Returns
+            -------
+            array
+                a multidimensional array based on puzzleSize
+         """
+
         start = list(range(0, self.puzzleSize ** 2))
         random.shuffle(start)
         start = [start[i:i + self.puzzleSize] for i in range(0, len(start), self.puzzleSize)]
         return start
 
     def goalPuzzle(self):
-        """ Generate Puzzle matrice"""
+        """
+            Generate Puzzle matrice that represents the goal state
+
+            Returns
+            -------
+            array
+                a multidimensional array based on puzzleSize
+         """
         goal = list(range(0, self.puzzleSize ** 2))
         goal = [goal[i:i + self.puzzleSize] for i in range(0, len(goal), self.puzzleSize)]
         return goal
 
     def f(self, node, goal):
-        """ Heuristic Function to calculate hueristic value f(x) = h(x) + g(x) """
+        """
+             Heuristic Function to calculate hueristic value f(x) = h(x) + g(x)
+
+             Parameters
+             ----------
+             node : node
+                 current node
+            goal : node
+                goal matrice
+
+            Returns
+            -------
+            int
+                a value that represents how "close" the algorithm is to reach the goal state
+         """
         return self.heuristic(node.puzzle, goal) + node.level
 
     def h_hemmington(self, start, goal):
-        """ Calculates the different between the given puzzles """
+        """
+             Calculates the different between the given puzzles
+
+             Parameters
+             ----------
+             start : node
+                 start matrice
+            goal : node
+                goal matrice
+
+            Returns
+            -------
+            int
+                heuristic value
+         """
         temp = 0
         for i in range(0, self.puzzleSize):
             for j in range(0, self.puzzleSize):
@@ -151,6 +235,21 @@ class Puzzle:
         return temp
 
     def h_manhattan(self, start, goal):
+        """
+             Calculates the steps per tile to get into correct position
+
+             Parameters
+             ----------
+             start : node
+                 start matrice
+            goal : node
+                goal matrice
+
+            Returns
+            -------
+            int
+                heuristic value
+         """
         distance = 0
         # iterate through all numbers in start puzzle
         for y, row in enumerate(start):
@@ -165,9 +264,25 @@ class Puzzle:
         return distance
 
     def estimate_effective_branching_factor(self, searchCost, depth):
+        """
+             Calculates the effective branching factor. The average number of successors per state
+
+             Parameters
+             ----------
+             searchCost : int
+                 actual traversed nodes
+            depth : int
+                actual depth of the tree
+
+            Returns
+            -------
+            int
+                effective branching factor
+         """
         return searchCost ** (1 / depth)
 
     def main(self):
+        """ Generate a solvable starting puzzle """
         while True:
             self.startPuzzle = self.randomStartPuzzle()
             if self.isSolvable(self.startPuzzle):
@@ -175,12 +290,14 @@ class Puzzle:
                 break
             print('puzzle not solvable, calculate new one')
 
+        """ set the start/goal puzzle states """
         startNode = Node(self.startPuzzle, 0, 0)
         goal = self.goalPuzzle
         startNode.fval = self.f(startNode, goal)
         """ Put the start node in the open list"""
         self.open.append(startNode)
         iterations = 0
+        """ start the A* algorithm """
         while True:
             iterations = iterations + 1
             currNode = self.open[0]
@@ -199,6 +316,8 @@ class Puzzle:
                 print("result:")
                 self.printPuzzle(currNode)
                 break
+
+            """ Generate childs for current node and calculate its parameters"""
             childs = currNode.generate_child()
             for i in childs:
                 new = True
@@ -221,6 +340,17 @@ class Puzzle:
 
 
 def user_interface():
+    """
+        Provides the user with an user interface
+
+        user provided values
+        ------
+        heuristic : string
+            the heuristic algorithm that should be used
+        iterations : int
+            the amount of maximum iterations per solvable puzzle until a new one is generated
+
+    """
     while True:
         print("Enter heuristic ('manhattan' or 'hemmington'): ")
         try:
@@ -246,6 +376,7 @@ def user_interface():
     return heuristic, maxIterations
 
 
+""" Generate new puzzle instance based on user input and start the program """
 heuristic, maxIterations = user_interface()
 puz = Puzzle(3, maxIterations, heuristic)
 puz.main()
