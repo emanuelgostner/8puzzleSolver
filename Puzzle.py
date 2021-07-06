@@ -5,6 +5,20 @@ from itertools import islice
 
 
 class Node:
+    """
+        A class used to represent a Node
+
+        ...
+
+        Attributes
+        ----------
+        puzzle : array
+            a multidimensional array that represents a 3x3 puzzle
+        level : int
+            depth of the current node within the tree
+        fval : str
+            Value by which the Algorithm chooses the next node to traverse. Sum of heuristic value and number of nodes traversed by depth
+    """
     def __init__(self, puzzle, level, fval):
         """ Initialize the node with the data, level of the node and the calculated fvalue """
         self.puzzle = puzzle
@@ -15,8 +29,6 @@ class Node:
         """ Generate child nodes from the given node by moving the blank space
             either in the four directions {up,down,left,right} """
         x, y = self.find(self.puzzle, 0)
-        """ val_list contains position values for moving the blank space in either of
-            the 4 directions [up,down,left,right] respectively. """
         val_list = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]]
         children = []
         for i in val_list:
@@ -58,10 +70,10 @@ class Node:
 
 
 class Puzzle:
-    def __init__(self, puzzleSize, iterations, heuristic):
+    def __init__(self, puzzleSize, maxIterations, heuristic):
         """ Initialize the puzzle size by the specified size,open and closed lists to empty """
         self.puzzleSize = puzzleSize
-        self.iterations = iterations
+        self.maxIterations = maxIterations
         self.useHeuristic = heuristic
         if heuristic == "manhattan":
             self.heuristic = self.h_manhattan
@@ -104,7 +116,7 @@ class Puzzle:
         return (invCount % 2 == 0)
 
     def printPuzzle(self, node):
-        print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval}---')
+        print(f'---d: {node.level} searchCost: {self.searchCost} fval: {node.fval} heuristic val: {self.heuristic(node.puzzle, self.goalPuzzle)}---')
         for i in range(self.puzzleSize):
             for j in range(self.puzzleSize):
                 print(node.puzzle[i][j], end=' ')
@@ -168,10 +180,17 @@ class Puzzle:
         startNode.fval = self.f(startNode, goal)
         """ Put the start node in the open list"""
         self.open.append(startNode)
+        iterations = 0
         while True:
+            iterations = iterations + 1
             currNode = self.open[0]
             self.printPuzzle(currNode)
-
+            """ End condition. Maximum iteriations reached. Restart Start Puzzle generation"""
+            if(iterations > self.maxIterations):
+                self.open = []
+                self.closed = []
+                self.searchCost = 0
+                self.main()
             """ End condition. If heuristics equal 0 the goal is reached"""
             if self.heuristic(currNode.puzzle, self.goalPuzzle) == 0:
                 print(f'Algorithm A* with heuristic {self.useHeuristic}')
@@ -200,6 +219,7 @@ class Puzzle:
             self.open.sort(key=lambda x: x.fval, reverse=False)
             self.searchCost = self.searchCost + 1
 
+
 def user_interface():
     while True:
         print("Enter heuristic ('manhattan' or 'hemmington'): ")
@@ -212,11 +232,20 @@ def user_interface():
         except ValueError:
             print("The input is not valid 2")
 
+    while True:
+        print("Enter maximum number of iterations: ")
+        try:
+            maxIterations = int(input())
+            if maxIterations > 0:
+                break
+            print("The input must be positive")
+            continue
+        except ValueError:
+            print("The input is not a valid number")
+
+    return heuristic, maxIterations
 
 
-    return heuristic
-
-
-heuristic = user_interface()
-puz = Puzzle(3, 1, heuristic)
+heuristic, maxIterations = user_interface()
+puz = Puzzle(3, maxIterations, heuristic)
 puz.main()
